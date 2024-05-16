@@ -74,7 +74,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                   children: [
                     Text('Data: $formattedDate'),
                     Text('Hora: $formattedTime'),
-                    Text('Endereço: $address'),
+                    Text('Local: $address'),
                   ],
                 ),
                 // Adiciona ícones de ação à direita de cada item da lista
