@@ -7,9 +7,9 @@
     <application
         android:label="app_flutter">
         
-        <meta-data
+        <!-- <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCm_e6vf9EKkxE0flaGRkaFi7aH4fH8eNs" />
+            android:value="AIzaSyAQUeZ-14daKElOb_iej70KF9y4cpWyaIk" /> -->
 
         <!-- Other configurations -->
 

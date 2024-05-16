@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geocoding/geocoding.dart';
 
 class LocationSelectionScreen extends StatefulWidget {
   @override
@@ -8,53 +7,17 @@ class LocationSelectionScreen extends StatefulWidget {
 }
 
 class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
-  late GoogleMapController? mapController; // Alterado para aceitar nulo inicialmente
-  late LatLng _selectedLocation;
-  late TextEditingController _addressController;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedLocation = LatLng(0.0, 0.0); // Coordenadas iniciais
-    _addressController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    mapController?.dispose(); // Dispose apenas se não for nulo
-    _addressController.dispose();
-    super.dispose();
-  }
+  late GoogleMapController mapController;
+  LatLng _selectedLocation = LatLng(-22.9035, -43.2096); // Posição inicial do mapa
 
   void _onMapCreated(GoogleMapController controller) {
-    setState(() {
-      mapController = controller;
-    });
+    mapController = controller;
   }
 
   void _onMapTap(LatLng location) {
     setState(() {
       _selectedLocation = location;
     });
-    _getAddressFromCoordinates(location);
-  }
-
-  Future<void> _getAddressFromCoordinates(LatLng location) async {
-    try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
-      Placemark placemark = placemarks.first;
-      setState(() {
-        _addressController.text = '${placemark.street}, ${placemark.subLocality}, ${placemark.locality}';
-      });
-    } catch (e) {
-      setState(() {
-        _addressController.text = 'Endereço não encontrado';
-      });
-    }
-  }
-
-  void _selectLocation() {
-    Navigator.pop(context, _selectedLocation);
   }
 
   @override
@@ -73,6 +36,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                 target: _selectedLocation,
                 zoom: 15,
               ),
+              mapType: MapType.normal, // Certifique-se de que o tipo de mapa está definido
             ),
           ),
           Padding(
@@ -82,7 +46,6 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
               children: [
                 Text('Endereço:'),
                 TextField(
-                  controller: _addressController,
                   readOnly: true,
                   decoration: InputDecoration(
                     hintText: 'Clique no mapa para selecionar uma localização',
@@ -93,7 +56,9 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                 ),
                 SizedBox(height: 16.0),
                 ElevatedButton(
-                  onPressed: _selectLocation,
+                  onPressed: () {
+                    Navigator.pop(context, _selectedLocation);
+                  },
                   child: Text('Salvar Localização'),
                 ),
               ],

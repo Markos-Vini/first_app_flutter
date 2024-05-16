@@ -3,6 +3,12 @@
         android:label="app_flutter"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        
+        <!-- Adicionando a chave da API do Google Maps -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyAQUeZ-14daKElOb_iej70KF9y4cpWyaIk" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -42,3 +48,4 @@
         </intent>
     </queries>
 </manifest>
+
