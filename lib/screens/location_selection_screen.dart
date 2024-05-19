@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geocoding/geocoding.dart';
 
 class LocationSelectionScreen extends StatefulWidget {
   @override
@@ -9,6 +10,7 @@ class LocationSelectionScreen extends StatefulWidget {
 class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
   late GoogleMapController mapController;
   LatLng _selectedLocation = LatLng(-22.9035, -43.2096); // Posição inicial do mapa
+  TextEditingController _addressController = TextEditingController();
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
@@ -18,6 +20,36 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
     setState(() {
       _selectedLocation = location;
     });
+  }
+
+  Future<void> _searchAndNavigate() async {
+    String address = _addressController.text;
+    try {
+      List<Location> locations = await locationFromAddress(address);
+      if (locations.isNotEmpty) {
+        Location firstLocation = locations.first;
+        setState(() {
+          _selectedLocation = LatLng(firstLocation.latitude!, firstLocation.longitude!);
+        });
+        mapController.animateCamera(CameraUpdate.newLatLng(_selectedLocation));
+      } else {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Endereço não encontrado'),
+            content: Text('Não foi possível encontrar o endereço informado.'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      print('Erro ao buscar endereço: $e');
+    }
   }
 
   @override
@@ -37,6 +69,12 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                 zoom: 15,
               ),
               mapType: MapType.normal, // Certifique-se de que o tipo de mapa está definido
+              markers: {
+                Marker(
+                  markerId: MarkerId('selected_location'),
+                  position: _selectedLocation,
+                ),
+              },
             ),
           ),
           Padding(
@@ -44,15 +82,27 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Endereço:'),
-                TextField(
-                  readOnly: true,
-                  decoration: InputDecoration(
-                    hintText: 'Clique no mapa para selecionar uma localização',
-                    filled: true,
-                    fillColor: Colors.grey[200],
-                    contentPadding: EdgeInsets.all(8.0),
-                  ),
+                Text('Digite o endereço:'),
+                SizedBox(height: 8.0),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _addressController,
+                        decoration: InputDecoration(
+                          hintText: 'Digite o endereço',
+                          filled: true,
+                          fillColor: Colors.grey[200],
+                          contentPadding: EdgeInsets.all(8.0),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8.0),
+                    ElevatedButton(
+                      onPressed: _searchAndNavigate,
+                      child: Text('Buscar'),
+                    ),
+                  ],
                 ),
                 SizedBox(height: 16.0),
                 ElevatedButton(

@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:app_flutter/models/task.dart';
 import 'package:app_flutter/screens/task_form_screen.dart';
 import 'package:intl/intl.dart';
-import 'package:geocoding/geocoding.dart'; // Importe o pacote de geocodificação
+import 'package:geocoding/geocoding.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class TaskListScreen extends StatefulWidget {
   @override
@@ -12,14 +15,12 @@ class TaskListScreen extends StatefulWidget {
 class _TaskListScreenState extends State<TaskListScreen> {
   List<Task> tasks = [];
 
-  // Método para excluir uma tarefa
   void _deleteTask(int index) {
     setState(() {
       tasks.removeAt(index);
     });
   }
 
-  // Método para editar uma tarefa
   void _editTask(Task task) {
     Navigator.push(
       context,
@@ -27,7 +28,6 @@ class _TaskListScreenState extends State<TaskListScreen> {
     ).then((editedTask) {
       if (editedTask != null) {
         setState(() {
-          // Encontra a tarefa editada na lista e atualiza seus dados
           final index = tasks.indexWhere((t) => t.name == task.name);
           if (index != -1) {
             tasks[index] = editedTask;
@@ -37,79 +37,135 @@ class _TaskListScreenState extends State<TaskListScreen> {
     });
   }
 
-  // Método para converter coordenadas em endereço
-  Future<String> _getAddressFromCoordinates(double latitude, double longitude) async {
+  Future<LatLng> _getCoordinatesFromAddress(String address) async {
     try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(latitude, longitude);
-      Placemark placemark = placemarks.first;
-      return '${placemark.thoroughfare}, ${placemark.subThoroughfare}, ${placemark.locality}, ${placemark.subLocality}, ${placemark.administrativeArea}, ${placemark.subAdministrativeArea}, ${placemark.postalCode}, ${placemark.country}, ${placemark.isoCountryCode}';
+      List<Location> locations = await locationFromAddress(address);
+      Location firstLocation = locations.first;
+      return LatLng(firstLocation.latitude, firstLocation.longitude);
     } catch (e) {
-      return 'Endereço não encontrado';
+      print('Erro ao buscar coordenadas: $e');
+      return LatLng(-23.5505199, -46.6333094); // Localização padrão em caso de erro
     }
   }
+
+  bool _isMapExpanded = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white, // Fundo branco
       appBar: AppBar(
-        title: Text('Lista de Tarefas'),
+        centerTitle: true,
+        title: const Text('Lista de Tarefas', style: TextStyle(color: Colors.black)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.black),
       ),
-      body: ListView.builder(
-        itemCount: tasks.length,
-        itemBuilder: (context, index) {
-          final task = tasks[index];
-          // Formata a data e a hora
-          String formattedDate = DateFormat('dd/MM/yyyy').format(task.dateTime);
-          String formattedTime = DateFormat('HH:mm').format(task.dateTime);
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                itemCount: tasks.length,
+                itemBuilder: (context, index) {
+                  final task = tasks[index];
+                  String formattedDate = DateFormat('dd/MM/yyyy').format(task.dateTime);
+                  String formattedTime = DateFormat('HH:mm').format(task.dateTime);
 
-          // Converte as coordenadas em endereço
-          return FutureBuilder<String>(
-            future: _getAddressFromCoordinates(task.location.latitude, task.location.longitude),
-            builder: (context, snapshot) {
-              String address = snapshot.data ?? 'Endereço não encontrado';
-              return ListTile(
-                title: Text(task.name),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Data: $formattedDate'),
-                    Text('Hora: $formattedTime'),
-                    Text('Local: $address'),
-                  ],
-                ),
-                // Adiciona ícones de ação à direita de cada item da lista
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.edit),
-                      onPressed: () => _editTask(task),
+                  return Card(
+                    child: Column(
+                      children: [
+                        ListTile(
+                          title: Text(task.name),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Data: $formattedDate'),
+                              Text('Hora: $formattedTime'),
+                              Text('Local: ${task.address}'),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blue),
+                                    onPressed: () => _editTask(task),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () => _deleteTask(index),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isMapExpanded = !_isMapExpanded;
+                            });
+                          },
+                          child: Container(
+                            height: _isMapExpanded ? 300 : 100,
+                            child: FutureBuilder<LatLng>(
+                              future: _getCoordinatesFromAddress(task.address),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return const Center(child: CircularProgressIndicator());
+                                }
+
+                                if (snapshot.hasError) {
+                                  return const Center(child: Text('Erro ao carregar o mapa'));
+                                }
+
+                                LatLng location = snapshot.data ?? LatLng(0, 0);
+
+                                return GoogleMap(
+                                  initialCameraPosition: CameraPosition(
+                                    target: location,
+                                    zoom: 15,
+                                  ),
+                                  markers: {
+                                    Marker(
+                                      markerId: MarkerId(task.name),
+                                      position: location,
+                                    ),
+                                  },
+                                  gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>[
+                                    Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+                                  ].toSet(),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      icon: Icon(Icons.delete),
-                      onPressed: () => _deleteTask(index),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => TaskFormScreen()),
-          ).then((newTask) {
-            if (newTask != null) {
-              setState(() {
-                tasks.add(newTask);
-              });
-            }
-          });
-        },
-        child: Icon(Icons.add),
+                  );
+                },
+              ),
+            ),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => TaskFormScreen()),
+                  ).then((newTask) {
+                    if (newTask != null) {
+                      setState(() {
+                        tasks.add(newTask);
+                      });
+                    }
+                  });
+                },
+                child: const Text('Criar Nova Tarefa'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
