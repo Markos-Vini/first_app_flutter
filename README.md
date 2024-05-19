@@ -1,16 +1,51 @@
-# app_flutter
+# App de Tarefas
 
-A new Flutter project.
+Este é um aplicativo Flutter para gerenciar uma lista de tarefas. Ele permite criar, editar, excluir e listar tarefas. As tarefas podem ser armazenadas em memória, sem necessidade de persistência em banco de dados.
 
-## Getting Started
+## Funcionalidades
 
-This project is a starting point for a Flutter application.
+- Adicionar nova tarefa
+- Editar tarefa existente
+- Excluir tarefa
+- Listar tarefas
+- Visualizar a localização da tarefa no mapa
 
-A few resources to get you started if this is your first Flutter project:
+## Cada tarefa contém
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- Nome
+- Data e hora
+- Geolocalização (endereço)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Capturas de Tela
+
+![Tela Inicial](imagens/telaInicial.jpg)
+![Tela Data](imagens/data.jpg)
+![Tela Hora](imagens/hora.jpg)
+![Tela de Adicionar Tarefa](imagens/tarefa.jpg)
+![Tela de Lista de Tarefas](imagens/lista.jpg)
+
+## Como Executar
+
+1. Clone este repositório
+   ```sh
+   git clone https://github.com/Markos-Vini/first_app_flutter.git
+
+2. Navegue até o diretório do projeto
+    cd seu-repositorio.
+
+3. Instale as dependências
+    flutter pub get
+
+4. Execute o aplicativo
+    flutter run
+
+## Tecnologias Utilizadas
+    * Flutter.
+    * Google Maps API
+    * Geocoding
+    * Geolocator 
+
+## Autor
+    Marcos Evaristo
+
+       
